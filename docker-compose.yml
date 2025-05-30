@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  cassandra:
+    image: cassandra:4.0
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      cassandra_net:
+        ipv4_address: 172.20.0.2
+    environment:
+      - CASSANDRA_CLUSTER_NAME=demo
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "cassandra", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      
+  cassandra-web:
+    image: dcagatay/cassandra-web
+    container_name: cassandra-web
+    ports:
+      - "3000:3000"
+    environment:
+      - CASSANDRA_HOST_IPS=172.20.0.2
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+    depends_on:
+     cassandra:
+       condition: service_healthy
+    networks:
+      cassandra_net:
+        ipv4_address: 172.20.0.3
+
+networks:
+  cassandra_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
